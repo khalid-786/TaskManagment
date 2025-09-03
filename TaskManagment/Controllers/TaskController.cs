@@ -3,6 +3,7 @@ using Core.Entities;
 using Domain;
 using Domain.Dtos;
 using Microsoft.AspNetCore.Mvc;
+using System.Linq.Expressions;
 
 namespace TaskManagment.Controllers
 {
@@ -19,7 +20,7 @@ namespace TaskManagment.Controllers
         {
             try
             {
-                var row = await _unitOfWork.GenericeService.FindAsync(id);
+                var row = await _unitOfWork.TaskManageService.GetByIdAsync(id);
                 return Ok(_mapper.Map<TaskDto>(row));
             }
             catch (Exception e)
@@ -33,8 +34,14 @@ namespace TaskManagment.Controllers
         {
             try
             {
-                var Packages = await _unitOfWork.GenericeService.FindAllAsync(model);
-                return Ok(_mapper.Map<List<TaskDto>>(Packages));
+                Expression<Func<TaskManage, bool>> criteria = t => t.IsDeleted == false && t.Title.Contains(model.Title) && t.Status == model.Status;
+                var (tasksList, totalCount) =  await _unitOfWork.TaskManageService.FindAllAsync(criteria ,model.Take ,model.Skip);
+                var tasks = _mapper.Map<List<TaskDto>>(tasksList);
+                return Ok(new
+                {
+                    tasks ,
+                    totalCount 
+                });
             }
             catch (Exception e)
             {
@@ -47,7 +54,7 @@ namespace TaskManagment.Controllers
             try
             {
                 var newRow = _mapper.Map<TaskManage>(model);
-                var done = await _unitOfWork.GenericeService.AddAsync(newRow);
+                var done = await _unitOfWork.TaskManageService.AddAsync(newRow);
                 if (done > 0)
                     return Ok(new { Code = 200, Description = "Saved Success" });
                 else
@@ -63,7 +70,7 @@ namespace TaskManagment.Controllers
         {
             try
             {
-                TaskManage getRow = await _unitOfWork.GenericeService.FindAsync(Id);
+                TaskManage getRow = await _unitOfWork.TaskManageService.GetByIdAsync(Id);
                 if (getRow == null)
                 {
                     return Ok(new { Code = 200, Description = "" });
@@ -71,9 +78,9 @@ namespace TaskManagment.Controllers
                 else
                 {
                     var newRow = _mapper.Map<TaskDto, TaskManage>(model, getRow);
-                    int done = await _unitOfWork.GenericeService.Update(newRow);
+                    int done = await _unitOfWork.TaskManageService.Update(newRow);
                     if (done > 0)
-                        return Ok(new { Code = 200, Description = "UpdatetS uccess" });
+                        return Ok(new { Code = 200, Description = "Updatet Success" });
                     else
                         return Ok(new { Code = 408, Description = "Updated Fail" });
                 }
@@ -88,14 +95,15 @@ namespace TaskManagment.Controllers
         {
             try
             {
-                TaskManage getRow = await _unitOfWork.GenericeService.FindAsync(Id);
-                if (getRow == null)
+                TaskManage task = await _unitOfWork.TaskManageService.GetByIdAsync(Id);
+                if (task == null)
                 {
                     return NotFound(new { Code = 404, Description = "Task Not Found" });
                 }
                 else
                 {
-                    int done = await _unitOfWork.GenericeService.DeleteAsync(Id);
+                    task.IsDeleted = true;
+                    int done = await _unitOfWork.TaskManageService.Update(task);
                     if (done > 0)
                         return Ok(new { Code = 200, Description = "Deleted Success" });
                     else

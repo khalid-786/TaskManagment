@@ -22,5 +22,6 @@ namespace Core.Entities
         public  TaskStatusEnum Status { get; set; }
         [Required]
         public TaskPriorityEnum Priority { get; set; }
+        public bool IsDeleted { get; set; } = false;
     }
 }

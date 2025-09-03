@@ -1,6 +1,7 @@
 ﻿
 
 using Application.Implementation;
+using Core.Entities;
 using Domain;
 using Domain.Service;
 using Infrastructure;
@@ -13,12 +14,12 @@ namespace Peers.Application
      
   
 
-        public IGenericeService GenericeService { get; }
+        public IGenericeService<TaskManage> TaskManageService { get; }
         public UnitOfWork(AppDbContext context )
         {
             _context = context;
 
-            GenericeService = new GenericService(_context);
+            TaskManageService = new GenericService<TaskManage>(_context);
         }
 
         public int Save()

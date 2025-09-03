@@ -6,63 +6,62 @@ using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace Application.Implementation
 {
-    public class GenericService : IGenericeService
+    public class GenericService<T> : IGenericeService<T> where T : class
     {
         protected AppDbContext _db { get; set; }
         public GenericService(AppDbContext db) {
           _db = db;
         }
 
-        public  async Task<int> AddAsync(TaskManage model)
+        public  async Task<int> AddAsync(T entiy)
         {
-          await  _db.TaskManages.AddAsync(model);
+          await  _db.AddAsync(entiy);
             var done = await _db.SaveChangesAsync();
             return done;
         }
 
-        public async Task<int> DeleteAsync(int id)
+        public async Task<int> DeleteAsync(T entity)
         {
-            var task = await _db.TaskManages.FindAsync(id);
-            if (task != null)
-            {
-                _db.TaskManages.Remove(task);
+            
+                _db.Remove(entity);
                 var done = await _db.SaveChangesAsync(); 
                 return done;
-            }else
-            {
-                return 404;
-            }
         }
 
-        public async Task<int> Update(TaskManage model)
+       
+
+        public async Task<int> Update(T entity)
         {
-            var task = await _db.TaskManages.FindAsync(model.Id);
-            if (task != null)
-            {
-                _db.TaskManages.Update(task);
-                var done = await _db.SaveChangesAsync();
-                return done;
-            }
-            else
-            {
-                return 404;
-            }
+            _db.Update(entity);
+            var done = await _db.SaveChangesAsync();
+            return done;
         }
 
-        public async Task<TaskManage> FindAsync(int id)
-        {
-            return await _db.TaskManages.FindAsync( id);
-        }
 
-        public async Task<IEnumerable<TaskManage>> FindAllAsync(TaskFilterDto taskFilterDto)
+      
+        public async Task<T> GetByIdAsync(int id)
         {
-            return await _db.TaskManages.Where(t => t.Title.Contains(taskFilterDto.Title) && t.Status == taskFilterDto.Status )
-                .Skip(taskFilterDto.Skip).Take(taskFilterDto.Take).ToListAsync();
+            return await _db.Set<T>().FindAsync(id);
+        }
+        public async Task<(IEnumerable<T> Items, int TotalCount)> FindAllAsync(Expression<Func<T, bool>> criteria, int? take, int? skip)
+        {
+            IQueryable<T> query = _db.Set<T>();
+            query = query.Where(criteria);
+            if (skip.HasValue)
+                query = query.Skip(skip.Value);
+
+            if (take.HasValue)
+                query = query.Take(take.Value);
+            var totalCount = await query.CountAsync();
+            var items = await query.ToListAsync();
+
+            return (items, totalCount);
         }
     }
 }

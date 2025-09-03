@@ -1,5 +1,6 @@
 ﻿
 
+using Core.Entities;
 using Domain.Service;
 
 namespace Domain
@@ -8,7 +9,7 @@ namespace Domain
     {
        
      
-        IGenericeService GenericeService { get; }
+        IGenericeService<TaskManage> TaskManageService { get; }
      
 
 
